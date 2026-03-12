@@ -69,8 +69,8 @@ export async function getQuote(req, res, next) {
     const quote = rows[0];
     res.json({
       ...quote,
-      input_snapshot_json: JSON.parse(quote.input_snapshot_json || '{}'),
-      output_snapshot_json: JSON.parse(quote.output_snapshot_json || '{}')
+      input_snapshot_json: typeof quote.input_snapshot_json === 'string' ? JSON.parse(quote.input_snapshot_json || '{}') : (quote.input_snapshot_json || {}),
+      output_snapshot_json: typeof quote.output_snapshot_json === 'string' ? JSON.parse(quote.output_snapshot_json || '{}') : (quote.output_snapshot_json || {})
     });
   } catch (error) {
     next(error);
@@ -107,7 +107,10 @@ export async function generatePdf(req, res, next) {
     if (!rows.length) return next({ status: 404, message: 'Quote not found' });
 
     const quote = rows[0];
-    const inputSnapshot = JSON.parse(quote.input_snapshot_json || '{}');
+    const rawSnapshot = quote.input_snapshot_json;
+    const inputSnapshot = typeof rawSnapshot === 'string'
+      ? JSON.parse(rawSnapshot || '{}')
+      : (rawSnapshot || {});
     // Always recalculate fresh from input — never use stale output_snapshot_json
     const calculations = calculateQuote(inputSnapshot);
     const { fileName, filePath } = await generateQuotePdf({ quote, calculations, inputSnapshot });
