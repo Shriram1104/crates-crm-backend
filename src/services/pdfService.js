@@ -184,7 +184,11 @@ export async function generateQuotePdf({ quote, calculations, inputSnapshot }) {
   await fs.mkdir(dir, { recursive: true });
   const fileName = `${quote.quote_number}.pdf`;
   const filePath = path.join(dir, fileName);
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+  });
   try {
     const page = await browser.newPage();
     await page.setContent(buildQuoteHtml({ quote, calculations, inputSnapshot }), { waitUntil: 'networkidle0' });
