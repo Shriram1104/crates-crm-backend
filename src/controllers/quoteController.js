@@ -17,7 +17,8 @@ const quoteSchema = z.object({
   ppInsert: z.object({}).passthrough(),
   hdpe: z.object({}).passthrough(),
   foam: z.object({}).passthrough(),
-  flapCover: z.object({}).passthrough()
+  flapCover: z.object({}).passthrough(),
+  fabricDunnage: z.object({}).passthrough().optional()
 });
 
 export async function listQuotes(req, res, next) {
