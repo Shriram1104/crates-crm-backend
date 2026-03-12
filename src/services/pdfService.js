@@ -34,7 +34,78 @@ function buildRows(inputSnapshot, calculations) {
   ];
 }
 
+
+function buildDunnageHtml(d) {
+  if (!d || !d.enabled) return '';
+  const nv = v => Number(v || 0);
+  const r2 = v => Math.round((nv(v) + Number.EPSILON) * 100) / 100;
+  const pc = v => { const x = nv(v); return Math.abs(x) > 1 ? x / 100 : x; };
+  const fabricAmt    = r2(nv(d.fabricTapetaQty) * nv(d.fabricTapetaRate));
+  const epeAmt       = r2(nv(d.epeFoamQty)      * nv(d.epeFoamRate));
+  const velcroAmt    = r2(nv(d.velcroQty)        * nv(d.velcroRate));
+  const pvcFlapAmt   = r2(nv(d.pvcFlapQty)       * nv(d.pvcFlapRate));
+  const threadAmt    = r2(nv(d.threadQty)         * nv(d.threadRate));
+  const labourAmt    = r2(nv(d.labourQty)         * nv(d.labourRate));
+  const transportAmt = r2(nv(d.transportQty) * nv(d.transportRate));
+  const totalA       = r2(fabricAmt + epeAmt + velcroAmt + pvcFlapAmt + threadAmt + labourAmt + transportAmt);
+  const profitAmt    = r2(totalA * pc(d.profitPercent));
+  const totalB       = r2(totalA + profitAmt);
+  const tripakAmt    = r2(totalB * pc(d.tripakProfitPercent));
+  const totalC       = r2(totalB + tripakAmt);
+  const cratesCost   = r2(nv(d.cratesCostQty) * nv(d.cratesCostRate));
+  const grandTotal   = r2(totalC + cratesCost);
+
+  const itemRows = [
+    ['Fabric - Tapeta', 'MTR', d.fabricTapetaQty, d.fabricTapetaRate, fabricAmt],
+    ['EPE Foam - 2mm',  'MTR', d.epeFoamQty,      d.epeFoamRate,      epeAmt],
+    ['Velcro',          'MTR', d.velcroQty,        d.velcroRate,       velcroAmt],
+    ['PVC Flap Cover',  'MTR', d.pvcFlapQty,       d.pvcFlapRate,      pvcFlapAmt],
+    ['Thread',          'MTR', d.threadQty,         d.threadRate,       threadAmt],
+    ['Labour',          'Job', d.labourQty,         d.labourRate,       labourAmt],
+    ['Transport',       'Job', d.transportQty,      d.transportRate,    transportAmt],
+  ].map((r, i) => [
+    '<tr style="background:' + (i % 2 === 0 ? '#f8f9fa' : '#fff') + '">',
+    '<td style="padding:4px 8px;">' + r[0] + '</td>',
+    '<td style="padding:4px 8px;text-align:center;color:#666;">' + r[1] + '</td>',
+    '<td style="padding:4px 8px;text-align:right;">' + r[2] + '</td>',
+    '<td style="padding:4px 8px;text-align:right;">' + r[3] + '</td>',
+    '<td style="padding:4px 8px;text-align:right;font-weight:600;">' + cur(r[4]) + '</td>',
+    '</tr>',
+  ].join('')).join('');
+
+  const partRow = d.partName
+    ? '<div style="padding:5px 10px;background:#f0f4ff;font-size:11px;border:1px solid #c7d2fe;border-top:none;"><strong>Part:</strong> ' + e(d.partName) + '</div>'
+    : '';
+
+  return [
+    '<div style="margin-top:24px;page-break-inside:avoid;">',
+    '<div style="background:#1e3a5f;color:#fff;padding:8px 12px;font-weight:700;font-size:13px;border-radius:4px 4px 0 0;">',
+    '&#129525; FABRIC DUNNAGE COST &mdash; Add-on (Separate from Main Crate Total)',
+    '</div>',
+    partRow,
+    '<table style="width:100%;border-collapse:collapse;font-size:11px;">',
+    '<thead><tr style="background:#2d5a9e;color:#fff;">',
+    '<th style="padding:5px 8px;text-align:left;">Item</th>',
+    '<th style="padding:5px 8px;text-align:center;">Unit</th>',
+    '<th style="padding:5px 8px;text-align:right;">Qty</th>',
+    '<th style="padding:5px 8px;text-align:right;">Rate (&#8377;)</th>',
+    '<th style="padding:5px 8px;text-align:right;">Amount (&#8377;)</th>',
+    '</tr></thead>',
+    '<tbody>' + itemRows + '</tbody>',
+    '<tfoot>',
+    '<tr style="background:#dbeafe;font-weight:600;"><td colspan="4" style="padding:5px 8px;text-align:right;">Total (A)</td><td style="padding:5px 8px;text-align:right;">' + cur(totalA) + '</td></tr>',
+    '<tr style="background:#fff;"><td colspan="4" style="padding:5px 8px;text-align:right;">+ Profit (' + d.profitPercent + '%)</td><td style="padding:5px 8px;text-align:right;">' + cur(profitAmt) + '</td></tr>',
+    '<tr style="background:#f0f4ff;font-weight:600;"><td colspan="4" style="padding:5px 8px;text-align:right;">Total (B)</td><td style="padding:5px 8px;text-align:right;">' + cur(totalB) + '</td></tr>',
+    '<tr style="background:#fff;"><td colspan="4" style="padding:5px 8px;text-align:right;">+ Tripak Profit (' + d.tripakProfitPercent + '%)</td><td style="padding:5px 8px;text-align:right;">' + cur(tripakAmt) + '</td></tr>',
+    '<tr style="background:#e0e7ff;font-weight:600;"><td colspan="4" style="padding:5px 8px;text-align:right;">Total (C)</td><td style="padding:5px 8px;text-align:right;">' + cur(totalC) + '</td></tr>',
+    '<tr style="background:#fff;"><td colspan="4" style="padding:5px 8px;text-align:right;">+ Crates Cost (' + nv(d.cratesCostQty) + ' &times; &#8377;' + nv(d.cratesCostRate) + ')</td><td style="padding:5px 8px;text-align:right;">' + cur(cratesCost) + '</td></tr>',
+    '<tr style="background:#1e3a5f;color:#fff;"><td colspan="4" style="padding:7px 8px;text-align:right;font-weight:700;letter-spacing:0.5px;">FABRIC DUNNAGE GRAND TOTAL</td><td style="padding:7px 8px;text-align:right;font-weight:700;color:#fbbf24;font-size:13px;">' + cur(grandTotal) + '</td></tr>',
+    '</tfoot></table></div>',
+  ].join('\n');
+}
+
 export function buildQuoteHtml({ quote, calculations, inputSnapshot }) {
+  const dunnageHtml = buildDunnageHtml(inputSnapshot?.fabricDunnage);
   const rows = buildRows(inputSnapshot || {}, calculations);
   const dateStr = quote.quote_date
     ? new Date(quote.quote_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -164,6 +235,8 @@ export function buildQuoteHtml({ quote, calculations, inputSnapshot }) {
 </table>
 
 ${quote.remarks ? `<div style="margin-top:10px;padding:6px 10px;background:#f9fbe7;border:1px solid #c5e1a5;border-radius:3px;font-size:11px;"><strong>Remarks:</strong> ${e(quote.remarks)}</div>` : ''}
+
+${dunnageHtml}
 
 <!-- FOOTER -->
 <div class="footer">
